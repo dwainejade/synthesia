@@ -68,3 +68,4 @@ $ pnpm run dev
 ## Contributing
 
 Feel free to dive in! [Open an issue](https://github.com/RoyRao2333/template-vite-react-ts-tailwind/issues/new) or submit PRs.
+# synthesia
