@@ -28,16 +28,6 @@ const LastFmSearch = ({ onSelectAlbum, apiKey }: LastFmSearchProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Function to format image URLs with the proxy
-  const formatImageUrl = (originalUrl: string): string => {
-    if (!originalUrl) return '';
-    return `http://localhost:3001/proxy-image?url=${encodeURIComponent(
-      originalUrl,
-    )}`;
-  };
-
-  console.log(formatImageUrl('https://example.com/image.jpg'));
-
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
 
@@ -84,14 +74,13 @@ const LastFmSearch = ({ onSelectAlbum, apiKey }: LastFmSearchProps) => {
             // Map all available images by size
             album.image.forEach((img: any) => {
               if (img.size && img['#text']) {
-                // Store the original URL
                 allImages[img.size as keyof typeof allImages] = img['#text'];
               }
             });
           }
 
           // Get the largest available image for the main display
-          const originalImageUrl =
+          const largeImageUrl =
             allImages.extralarge ||
             allImages.large ||
             allImages.medium ||
@@ -100,22 +89,15 @@ const LastFmSearch = ({ onSelectAlbum, apiKey }: LastFmSearchProps) => {
           return {
             name: album.name,
             artist: album.artist,
-            // Use the proxy URL for the main image
-            imageUrl: formatImageUrl(originalImageUrl),
+            imageUrl: largeImageUrl,
             mbid: album.mbid,
-            // Store all proxied image URLs
-            allImages: {
-              small: formatImageUrl(allImages.small),
-              medium: formatImageUrl(allImages.medium),
-              large: formatImageUrl(allImages.large),
-              extralarge: formatImageUrl(allImages.extralarge),
-            },
+            allImages,
           };
         });
 
         // Filter out albums without any images
         const albumsWithImages = processedAlbums.filter(
-          (album) => album.imageUrl && album.imageUrl !== formatImageUrl(''),
+          (album) => album.imageUrl,
         );
 
         setAlbums(albumsWithImages);
@@ -147,9 +129,7 @@ const LastFmSearch = ({ onSelectAlbum, apiKey }: LastFmSearchProps) => {
   };
 
   return (
-    <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
-      <h2 className="mb-4 text-xl font-semibold">Search Albums with Last.fm</h2>
-
+    <div className="mb-8">
       <div className="mb-4 flex">
         <input
           type="text"
@@ -202,10 +182,10 @@ const LastFmSearch = ({ onSelectAlbum, apiKey }: LastFmSearchProps) => {
                       ) {
                         target.src = album.allImages.small;
                       }
-                      // Use a data URI placeholder if all else fails
+                      // Use a placeholder if all else fails
                       else {
                         target.src =
-                          'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22174%22%20height%3D%22174%22%20viewBox%3D%220%200%20174%20174%22%3E%3Crect%20fill%3D%22%23eee%22%20width%3D%22174%22%20height%3D%22174%22%2F%3E%3Ctext%20fill%3D%22%23999%22%20font-family%3D%22Arial%2CVerdana%2CSans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20x%3D%2287%22%20y%3D%2287%22%20dominant-baseline%3D%22middle%22%3EAlbum%3C%2Ftext%3E%3C%2Fsvg%3E';
+                          'https://via.placeholder.com/174x174?text=Album';
                       }
                     }}
                   />

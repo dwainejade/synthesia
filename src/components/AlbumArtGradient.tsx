@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ColorThief from 'colorthief';
+import LastFmSearch from './LastFmSearch';
 
 const AlbumArtGradient = () => {
   const [imageUrl, setImageUrl] = useState('');
@@ -8,19 +9,28 @@ const AlbumArtGradient = () => {
   const [palette, setPalette] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLastFmSearch, setShowLastFmSearch] = useState(false);
+  const [albumInfo, setAlbumInfo] = useState<{
+    name: string;
+    artist: string;
+  } | null>(null);
+
+  // Your Last.fm API key should be stored in an environment variable in a real app
+  // This is just a placeholder - you need to replace this with your actual API key
+  const LASTFM_API_KEY = import.meta.env.VITE_LASTFM_API_KEY;
 
   // Sample album covers using placeholder images that don't have CORS issues
   const sampleImages = [
-    'https://via.placeholder.com/400x400/3498db/ffffff?text=Album+1',
-    'https://via.placeholder.com/400x400/e74c3c/ffffff?text=Album+2',
-    'https://via.placeholder.com/400x400/2ecc71/ffffff?text=Album+3',
-    'https://via.placeholder.com/400x400/9b59b6/ffffff?text=Album+4',
+    'https://lastfm.freetls.fastly.net/i/u/300x300/3c737386c1604655951f7ee93231f29f.png',
+    'https://lastfm.freetls.fastly.net/i/u/300x300/1f161965ef64dd3369a41745c6682b32.png',
+    'https://lastfm.freetls.fastly.net/i/u/300x300/1de9e3e9a3908045d96965eaea977215.png',
+    'https://lastfm.freetls.fastly.net/i/u/300x300/dff2a20f9c0848cf92eda1e3c6c618b3.png',
   ];
 
   // Initialize with first sample image
   useEffect(() => {
     if (!imageUrl) {
-      useSampleImage(sampleImages[0]);
+      handleSampleImageSelect(sampleImages[0]);
     }
   }, []);
 
@@ -94,6 +104,7 @@ const AlbumArtGradient = () => {
       setPalette([]);
       setLoading(true);
       setError(null);
+      setAlbumInfo(null);
 
       reader.onload = (event) => {
         if (event.target && typeof event.target.result === 'string') {
@@ -120,13 +131,25 @@ const AlbumArtGradient = () => {
     if (url) {
       setImageUrl(url);
       extractColors(url, colorCount);
+      setAlbumInfo(null);
     }
   };
 
   // Use a sample image
-  const useSampleImage = (url: string) => {
+  const handleSampleImageSelect = (url: string) => {
     setImageUrl(url);
     extractColors(url, colorCount);
+    setAlbumInfo(null);
+  };
+
+  // Handle album selection from Last.fm
+  const handleAlbumSelect = (
+    url: string,
+    albumData: { name: string; artist: string },
+  ) => {
+    setImageUrl(url);
+    extractColors(url, colorCount);
+    setAlbumInfo(albumData);
   };
 
   // Update colors when colorCount changes
@@ -163,6 +186,13 @@ const AlbumArtGradient = () => {
           ) : null}
         </div>
 
+        {albumInfo ? (
+          <div className="mb-4 text-center">
+            <h2 className="text-xl font-bold text-white">{albumInfo.name}</h2>
+            <p className="text-white opacity-80">{albumInfo.artist}</p>
+          </div>
+        ) : null}
+
         {loading ? (
           <p className="rounded bg-black bg-opacity-50 p-2 text-white">
             Processing...
@@ -187,7 +217,7 @@ const AlbumArtGradient = () => {
                   title={color}
                 >
                   <div className="absolute -bottom-6 left-0 right-0 overflow-hidden text-ellipsis text-center text-xs text-white">
-                    {color}
+                    {/* {color} */}
                   </div>
                 </div>
               ))}
@@ -197,7 +227,13 @@ const AlbumArtGradient = () => {
       </div>
 
       {/* Controls */}
-      <div className="rounded-lg bg-white p-6 shadow-md">
+      <div className="">
+        {/* Last.fm Search Component */}
+        <LastFmSearch
+          onSelectAlbum={handleAlbumSelect}
+          apiKey={LASTFM_API_KEY}
+        />
+
         {/* Method 1: Upload a file */}
         <div className="mb-6">
           <h3 className="mb-2 text-sm font-medium text-gray-700">
@@ -209,9 +245,6 @@ const AlbumArtGradient = () => {
             onChange={handleFileChange}
             className="w-full rounded-md border border-gray-300 p-2"
           />
-          <p className="mt-1 text-xs text-gray-500">
-            This method bypasses CORS restrictions completely
-          </p>
         </div>
 
         {/* Method 2: Direct URL */}
@@ -233,9 +266,6 @@ const AlbumArtGradient = () => {
               Load
             </button>
           </div>
-          <p className="mt-1 text-xs text-gray-500">
-            Note: This method may fail due to CORS restrictions
-          </p>
         </form>
 
         <div className="mb-4">
@@ -262,7 +292,7 @@ const AlbumArtGradient = () => {
             {sampleImages.map((url, index) => (
               <button
                 key={index}
-                onClick={() => useSampleImage(url)}
+                onClick={() => handleSampleImageSelect(url)}
                 className="rounded border border-gray-200 p-1 hover:bg-gray-100"
               >
                 <img
@@ -277,29 +307,6 @@ const AlbumArtGradient = () => {
             These sample images should work without CORS issues
           </p>
         </div>
-      </div>
-
-      {/* Info */}
-      <div className="mt-8 rounded-lg bg-gray-100 p-4">
-        <h2 className="mb-2 text-lg font-semibold">How It Works</h2>
-        <p className="text-sm">
-          This component uses the ColorThief library to extract a color palette
-          from the album artwork. It creates a gradient background using the two
-          most dominant colors, mimicking the effect seen in the iOS Music app.
-        </p>
-        <p className="mt-2 text-sm">
-          <strong>CORS Issue Fix:</strong> This implementation uses a workaround
-          that creates a new Image object programmatically with crossOrigin set
-          to 'Anonymous' before setting the src attribute. This can help with
-          some CORS issues, but the most reliable method is still to upload your
-          own images directly.
-        </p>
-        <p className="mt-2 text-sm">
-          In a real application, you would need to install:
-          <code className="mt-1 block rounded bg-gray-200 p-2">
-            npm install colorthief
-          </code>
-        </p>
       </div>
     </div>
   );
